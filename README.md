@@ -1,2 +1,0 @@
-# caddisfly
-Store Management System
