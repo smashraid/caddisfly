@@ -1,0 +1,99 @@
+<form class="form-horizontal" [formGroup]="employeeForm" (ngSubmit)="onSubmit()">
+    <div class="form-group" 
+    >
+        <div class="col-3 col-sm-12">
+            <label class="form-label" for="title">Title</label>
+        </div>
+        <div class="col-9 col-sm-12">
+            <select class="form-select" name="title" formControlName="title" 
+           >
+                <option value="Mr">Mr.</option>
+                <option value="Mrs">Mrs.</option>
+                <option value="Ms">Ms.</option>
+                <option value="Miss">Miss.</option>
+            </select>
+            <!-- <p class="form-input-hint" *ngIf="name.invalid && (name.dirty || name.touched)">this field is required.</p> -->
+        </div>
+    </div>
+    <div class="form-group"
+     [ngClass] = "{'has-error': isSubmitted && f.firstName.errors}">
+        <div class="col-3 col-sm-12">
+            <label class="form-label" for="firstName">FirstName</label>
+        </div>
+        <div class="col-9 col-sm-12">
+            <input class="form-input" type="text" id="firstName" name="firstName" placeholder="FirstName" formControlName="firstName" required
+            >
+            <p class="form-input-hint" *ngIf="f.firstName.invalid && (f.firstName.dirty || f.firstName.touched)">this field is required.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-3 col-sm-12">
+            <label class="form-label" for="lastName">LastName</label>
+        </div>
+        <div class="col-9 col-sm-12">
+            <input class="form-input" type="text" id="lastName" placeholder="LastName" formControlName="lastName">
+            <p class="form-input-hint" *ngIf="f.lastName.invalid && (f.lastName.dirty || f.lastName.touched)">this field is required.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-3 col-sm-12">
+            <label class="form-label">Gender</label>
+        </div>
+        <div class="col-9 col-sm-12">
+            <label class="form-radio">
+                <input type="radio" name="gender" value="M" formControlName="gender">
+                <i class="form-icon"></i> Male
+            </label>
+            <label class="form-radio">
+                <input type="radio" name="gender" value="F" formControlName="gender">
+                <i class="form-icon"></i> Female
+            </label>
+            <p class="form-input-hint" *ngIf="f.gender.invalid && (f.gender.dirty || f.gender.touched)">this field is required.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-3 col-sm-12">
+            <label class="form-label" for="address">Address</label>
+        </div>
+        <div class="col-9 col-sm-12">
+            <input class="form-input" type="text" id="address" placeholder="Address" formControlName="address">
+            <p class="form-input-hint" *ngIf="f.address.invalid && (f.address.dirty || f.address.touched)">this field is required.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-3 col-sm-12">
+            <label class="form-label" for="city">City</label>
+        </div>
+        <div class="col-9 col-sm-12">
+            <input class="form-input" type="text" id="city" placeholder="City" formControlName="city">
+            <p class="form-input-hint" *ngIf="f.city.invalid && (f.city.dirty || f.city.touched)">this field is required.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-3 col-sm-12">
+            <label class="form-label" for="region">Region</label>
+        </div>
+        <div class="col-9 col-sm-12">
+            <input class="form-input" type="text" id="region" placeholder="Region" formControlName="region">
+            <p class="form-input-hint" *ngIf="f.region.invalid && (f.region.dirty || f.region.touched)">this field is required.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-3 col-sm-12">
+            <label class="form-label" for="postalCode">Postal Code</label>
+        </div>
+        <div class="col-9 col-sm-12">
+            <input class="form-input" type="text" id="postalCode" placeholder="Postal Code" formControlName="postalCode">
+            <p class="form-input-hint" *ngIf="f.postalCode.invalid && (f.postalCode.dirty || f.postalCode.touched)">this field is required.</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-3 col-sm-12">
+
+        </div>
+        <div class="col-9 col-sm-12">
+            <button type="submit" class="btn btn-primary mr-2" >Submit</button>
+        </div>
+    </div>
+
+</form>

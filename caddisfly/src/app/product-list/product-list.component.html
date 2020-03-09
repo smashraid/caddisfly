@@ -1,0 +1,28 @@
+<h2>Products</h2>
+<div class="container">
+  <div class="columns">
+    <div class="column">
+      <div *ngFor="let product of products">
+
+        <h3>
+          <a [title]="product.name + ' details'">
+            {{ product.name }}
+          </a>
+        </h3>
+      
+        <p *ngIf="product.description">
+          Description: {{ product.description }}
+        </p>
+      
+        <button (click)="share()">
+          Share
+          <i class="icon icon--heart"></i>          
+        </button>
+      
+      </div>
+    </div>
+    <div class="column"></div>
+  </div>
+</div>
+
+
