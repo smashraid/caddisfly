@@ -8,13 +8,16 @@ import { AdminModule } from './admin/admin.module';
 
 import { AppComponent } from './app.component';
 import { ProductListComponent } from './product-list/product-list.component';
-
+import { CartComponent } from './cart/cart.component';
+import { StoreComponent } from './store/store.component';
 
 
 @NgModule({
   declarations: [
     AppComponent,
-    ProductListComponent
+    ProductListComponent,
+    CartComponent,
+    StoreComponent
   ],
   imports: [
     BrowserModule,
