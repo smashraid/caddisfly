@@ -1,0 +1,32 @@
+<div class="container">
+    <div class="columns">
+        <div class="column col-3">
+            <ul class="nav nav-pills bg-secondary">
+                <li> 
+                    <figure>
+                        <img class="img-responsive"  src="/assets/images/iconfinder_Artboard_29_5627762.png" alt="...">
+                        <figcaption class="figure-caption text-center">
+                           <h6> Welcome User</h6>
+                        </figcaption>
+                      </figure>                      
+                </li>
+                <li class="nav-item nav-link p-2 bg-primary">
+                    <i class="icon icon-3x icon--user_white"></i>                    
+                    <a routerLink="/admin/employee" routerLinkActive="active">Employee</a>
+                </li>
+                <li class="nav-item nav-link p-2 bg-primary">
+                    <i class="icon icon-3x icon--user_white"></i>                    
+                    <a routerLink="/admin/category" routerLinkActive="active">Category</a>
+                </li>
+                <li class="nav-item nav-link p-2 bg-primary">
+                    <i class="icon icon-3x icon--user_white"></i>                    
+                    <a routerLink="/admin/product" routerLinkActive="active">Product</a>
+                </li>
+            </ul>
+        </div>
+        <div class="column col-9">
+            <router-outlet></router-outlet>
+        </div>
+
+    </div>
+</div>

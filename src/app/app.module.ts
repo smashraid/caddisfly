@@ -4,12 +4,12 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { NgModule } from '@angular/core';
 
 import { AppRoutingModule } from './app-routing.module';
-import { AdminModule } from './admin/admin.module';
+import { AdminModule } from './admin.module';
 
 import { AppComponent } from './app.component';
-import { ProductListComponent } from './product-list/product-list.component';
-import { CartComponent } from './cart/cart.component';
-import { StoreComponent } from './store/store.component';
+import { ProductListComponent } from './components/product-list/product-list.component';
+import { CartComponent } from './components/cart/cart.component';
+import { StoreComponent } from './components/store/store.component';
 
 
 @NgModule({
