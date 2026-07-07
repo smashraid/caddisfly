@@ -80,9 +80,18 @@ importers:
 
   packages/db-mongo:
     dependencies:
+      '@caddisfly/domain':
+        specifier: workspace:^
+        version: link:../domain
       mongoose:
         specifier: ^9.7.4
         version: 9.7.4
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
+
+  packages/domain:
     devDependencies:
       '@types/node':
         specifier: ^26.1.0

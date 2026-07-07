@@ -4,3 +4,4 @@ pnpm --filter @caddisfly/db-cassandra add -D @types/node
 pnpm add pino pino-pretty -w
 # Adding the config as a devDependency to your api-gateway
 pnpm --filter @caddisfly/api add -D @repo/typescript-config --workspace
+pnpm --filter @caddisfly/db-mongo add @caddisfly/domain --workspace

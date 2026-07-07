@@ -1,5 +1,5 @@
 {
-  "name": "@caddisfly/db-mongo",
+  "name": "@caddisfly/domain",
   "version": "0.1.0",
   "type": "module",
   "exports": {
@@ -10,8 +10,6 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@caddisfly/domain": "workspace:^",
-    "mongoose": "^9.7.4"
   },
   "devDependencies": {
     "@types/node": "^26.1.0"
