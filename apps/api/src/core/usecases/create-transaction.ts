@@ -1,5 +1,5 @@
 import { Transaction } from "../entities/transaction.js";
-import { ITransactionRepository } from "../../ports/repository.js";
+import { ITransactionRepository } from "../../ports/transaction-repository.js";
 import { logger } from "@caddisfly/logger";
 
 export class CreateTransactionUseCase {

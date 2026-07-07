@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { CreateTransactionUseCase } from "../../core/usecases/create-transaction.js";
 import { MongoTransactionRepository } from "../mongo/transaction.repository.js";
 
-const repo = new MongoTransactionRepository();
-const useCase = new CreateTransactionUseCase(repo);
+const repository = new MongoTransactionRepository();
+const useCase = new CreateTransactionUseCase(repository);
 
 export const handleCreateTransaction = async (req: Request, res: Response) => {
     const { amount, currency } = req.body;
