@@ -5,6 +5,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts\"",
+    "check-types": "tsc --noEmit"
+  },
   "devDependencies": {
     "@types/node": "^26.1.0"
   }

@@ -1,0 +1,6 @@
+# Example: Adding your packages to the API
+pnpm --filter @caddisfly/api add express
+pnpm --filter @caddisfly/db-cassandra add -D @types/node
+pnpm add pino pino-pretty -w
+# Adding the config as a devDependency to your api-gateway
+pnpm --filter @caddisfly/api add -D @repo/typescript-config --workspace

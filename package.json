@@ -1,7 +1,7 @@
 {
   "name": "caddisfly",
   "private": true,
-  "workspaces":[
+  "workspaces": [
     "apps/*",
     "packages/*"
   ],
@@ -13,12 +13,20 @@
     "check-types": "turbo run check-types"
   },
   "devDependencies": {
-    "prettier": "^3.7.4",
-    "turbo": "^2.10.3",
-    "typescript": "5.9.2"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.6.0",
+    "eslint-plugin-import": "^2.32.0",
+    "prettier": "^3.9.4",
+    "turbo": "^2.10.4",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.63.0"
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3"
   }
 }

@@ -1,0 +1,23 @@
+{
+  "name": "@caddisfly/api",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts\"",
+    "check-types": "tsc --noEmit",
+    "build": "tsup src/index.ts --format esm --out-dir dist"
+  },
+  "dependencies": {
+    "@caddisfly/db-cassandra": "workspace:^",
+    "@caddisfly/db-mongo": "workspace:^",
+    "@caddisfly/logger": "workspace:*",
+    "express": "^5.2.1",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:^",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.0"
+  }
+}
