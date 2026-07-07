@@ -1,159 +1,107 @@
-# Turborepo starter
+# Caddisfly Monorepo
 
-This Turborepo starter is maintained by the Turborepo core team.
+Caddisfly is a production-grade, modular monorepo structured around **Hexagonal Architecture**. It serves as a showcase for clean, scalable, and observable Node.js infrastructure.
 
-## Using this example
+### Why this architecture?
 
-Run the following command:
+Caddisfly is built on the **Hexagonal Architecture** (Ports and Adapters) pattern. By strictly separating the core business logic (Use Cases) from external concerns (Web Frameworks, Database Drivers), the system achieves:
 
-```sh
-npx create-turbo@latest
+* **Testability**: The core logic can be tested in isolation without needing a running database or HTTP server.
+* **Flexibility**: Infrastructure components can be swapped (e.g., migrating from MongoDB to a different storage engine) with minimal changes to the domain logic.
+* **Observability**: By utilizing `AsyncLocalStorage` and structured logging (Pino), every transaction is traceable from the initial HTTP request to the final database write, providing a clear audit trail for production monitoring.
+
+---
+
+### Architectural Component Diagram
+
+```mermaid
+graph TD
+    subgraph Web_Layer
+        API[API Gateway - Express]
+        Middleware[RequestContext Middleware]
+    end
+
+    subgraph Core_Domain
+        UC[Use Cases]
+        Ports[Domain Ports]
+    end
+
+    subgraph Infra_Layer
+        Mongo[Mongo Adapter]
+        Cassandra[Cassandra Adapter]
+        Logger[Logger Package]
+    end
+
+    API -->|Request| Middleware
+    Middleware -->|Execution Context| UC
+    UC -->|Calls Port| Ports
+    Ports -.->|Implemented by| Mongo
+    Ports -.->|Implemented by| Cassandra
+    UC -->|Logs| Logger
+    
+    style UC fill:#3d348b,stroke:#333,stroke-width:2px
+    style API fill:#00b4d8,stroke:#333,stroke-width:2px
+    style Logger fill:#6a994e,stroke:#333,stroke-width:2px
+
 ```
 
-## What's inside?
+---
 
-This Turborepo includes the following packages/apps:
+### Component Breakdown
 
-### Apps and Packages
+* **API Gateway (Express)**: The primary entry point. It handles incoming requests, validates input, and initiates the domain process.
+* **Middleware**: Responsible for generating a unique `traceId` per request and injecting it into the `AsyncLocalStorage` context.
+* **Use Cases (Core Domain)**: The "brain" of the application. It orchestrates the flow of data but has zero knowledge of how the database or web server operates.
+* **Domain Ports (Interfaces)**: These define the "contracts" that the infrastructure must follow. The Use Case relies on these interfaces, not the concrete implementation.
+* **Adapters (Infrastructure)**: The implementation of the Ports. Whether it is `db-mongo` or `db-cassandra`, these adapters fulfill the contract, allowing the system to talk to different databases seamlessly.
+* **Shared Packages**: Foundational code like the `logger` is shared across the entire monorepo, ensuring standardized telemetry formatting.
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+This structure is highly professional and demonstrates that you understand the complexities of building scalable, maintainable distributed systems.
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+**Does this Mermaid diagram and description accurately capture the vision you have for your portfolio? If so, we can jump into writing the first actual Use Case logic.**
 
-### Utilities
+## 🏗 Architecture
 
-This Turborepo has some additional tools already setup for you:
+This project implements the Ports and Adapters (Hexagonal) pattern to ensure domain logic remains independent of infrastructure (databases, web frameworks, external APIs).
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+* **`apps/`**: Entry points (API Gateways, CLI tools).
+* **`packages/`**: Shared domain logic, logger, and database adapters.
+* **Observability**: Fully integrated logging pipeline using **Pino**, **Grafana Loki**, and **Tempo** for distributed tracing.
 
-### Build
+## 🚀 Key Technical Features
 
-To build all apps and packages, run the following command:
+* **Monorepo Orchestration**: Managed by [Turbo](https://turbo.build/repo) for lightning-fast incremental builds and caching.
+* **Observability**: Custom `AsyncLocalStorage` middleware for request tracing. Logs are structured in JSON for native ingestion into the Grafana stack.
+* **Strict Typing**: Shared TypeScript configurations enforced across all packages via `@repo/typescript-config`.
+* **Resilience**: Graceful shutdown sequences ensuring data integrity during deployments.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## 🛠 Prerequisites
 
-```sh
-cd my-turborepo
-turbo build
+* [pnpm](https://pnpm.io/) (v9+)
+* Node.js (LTS)
+
+## 📦 Getting Started
+
+1. **Clone the repository**
+2. **Install dependencies**
+```bash
+pnpm install
+
 ```
 
-Without global `turbo`, use your package manager:
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+3. **Run in development**
+```bash
+pnpm dev
+
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## 🏗 Monorepo Commands
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+| Command | Description |
+| --- | --- |
+| `pnpm build` | Build all applications and packages |
+| `pnpm lint` | Lint all packages using ESLint |
+| `pnpm dev` | Run all applications in watch mode |
 
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+---
