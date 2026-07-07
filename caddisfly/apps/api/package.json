@@ -1,5 +1,12 @@
 {
+  "name": "@caddisfly/api",
+  "version": "0.1.0",
+  "type": "module",
   "dependencies": {
-    "@caddisfly/logger": "workspace:*"
+    "@caddisfly/logger": "workspace:*",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
   }
-}   
+}
