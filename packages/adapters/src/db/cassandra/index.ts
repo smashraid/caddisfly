@@ -1,1 +1,2 @@
-export { CassandraUserRepository, UserRepository } from './user-repository.js';
+export { CassandraUserRepositoryAdapter } from './user-repository.adapter.js';
+export { CassandraEventStoreAdapter } from './event-store.adapter.js';

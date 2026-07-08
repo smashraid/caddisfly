@@ -1,5 +1,6 @@
 export {
   DomainError,
+  DomainValidationError,
   InvalidEmailError,
   InvalidUserNameError,
   UserNotFoundError,

@@ -1,1 +1,1 @@
-export { MongoUserRepository, UserRepository } from './user-repository.js';
+export { MongoUserRepositoryAdapter } from './user-repository.adapter.js';

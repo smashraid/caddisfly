@@ -8,6 +8,8 @@
     "build": "tsup src/index.ts --format esm --out-dir dist"
   },
   "dependencies": {
+    "@caddisfly/adapters": "workspace:^",
+    "@caddisfly/core": "workspace:^",
     "@caddisfly/logger": "workspace:*",
     "express": "^5.2.1",
     "pino": "^10.3.1",

@@ -1,1 +1,1 @@
-export { PostgresUserRepository, UserRepository } from './user-repository.js';
+export { PostgresUserRepositoryAdapter } from './user-repository.adapter.js';

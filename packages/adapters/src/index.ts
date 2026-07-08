@@ -1,36 +1,23 @@
 // ─── Database Adapters ────────────────────────────────────────────────────────
-export { MongoUserRepository } from './db/mongo/index.js';
-export { PostgresUserRepository } from './db/postgres/index.js';
-export { CassandraUserRepository } from './db/cassandra/index.js';
+export { CassandraUserRepositoryAdapter } from './db/cassandra/user-repository.adapter.js';
+export { CassandraEventStoreAdapter } from './db/cassandra/event-store.adapter.js';
+export { MongoUserRepositoryAdapter } from './db/mongo/user-repository.adapter.js';
+export { PostgresUserRepositoryAdapter } from './db/postgres/user-repository.adapter.js';
 
 // ─── DB Orchestrator ──────────────────────────────────────────────────────────
 export {
   PostgresCassandraOrchestrator,
-  MongoCassandraOrchestrator,
-  createOrchestrator,
   type DbOrchestrator,
-  type IEventStore,
 } from './db/orchestrator/index.js';
 
-// ─── API Adapters ─────────────────────────────────────────────────────────────
-export { createUserRoutes } from './api/rest/index.js';
-export { createUserGrpcService } from './api/grpc/index.js';
-
-// ─── API Gateway ──────────────────────────────────────────────────────────────
-export {
-  createExpressGateway,
-  createFastifyGateway,
-  createGateway,
-  type GatewayConfig,
-} from './api/gateway/index.js';
-
 // ─── Messaging Adapters ───────────────────────────────────────────────────────
-export {
-  KafkaEventPublisher,
-  KafkaEventSubscriber,
-} from './messaging/kafka/index.js';
+export { KafkaEventPublisherAdapter } from './messaging/kafka/event-publisher.adapter.js';
+export { KafkaEventSubscriberAdapter } from './messaging/kafka/event-subscriber.adapter.js';
+export { RabbitEventPublisherAdapter } from './messaging/rabbitmq/event-publisher.adapter.js';
+export { RabbitEventSubscriberAdapter } from './messaging/rabbitmq/event-subscriber.adapter.js';
 
-export {
-  RabbitEventPublisher,
-  RabbitEventSubscriber,
-} from './messaging/rabbitmq/index.js';
+// ─── External API Adapters ────────────────────────────────────────────────────
+export { ExternalUserHttpAdapter } from './api/clients/external-user-http.adapter.js';
+
+// ─── Gateway/Framework Adapters ───────────────────
+// export { createExpressGateway } from './api/gateway/express.js';

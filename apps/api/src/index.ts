@@ -1,20 +1,67 @@
-import express from 'express';
-import { setupGracefulShutdown } from './shutdown.js';
+import express, { type Request, type Response } from 'express';
+import {
+  MongoUserRepositoryAdapter,
+  RabbitEventPublisherAdapter
+} from '@caddisfly/adapters';
+import {
+  type CreateUserRequest,
+  type UserCreatedResponse,
+} from '@caddisfly/core';
 import { requestContextMiddleware } from './middleware/request-context.js';
-import { handleCreateTransaction } from './adapters/web/transaction.controller.js';
+import { setupGracefulShutdown } from './shutdown.js';
+import { AppContainer } from './container.js';
 
-const app = express();
-app.use(express.json());
+async function bootstrap() {
+  const app = express();
+  app.use(express.json());
+  app.use(requestContextMiddleware);
 
-// 1. Pino Logger & Context Middleware (must be first)
-app.use(requestContextMiddleware);
+  const userRepository = new MongoUserRepositoryAdapter({
+    dbName: process.env.DB_NAME ?? 'caddisfly',
+    uri: process.env.MONGO_URI ?? 'mongodb://localhost:27017'
+  });
+  const eventPublisher = new RabbitEventPublisherAdapter(process.env.RABBIT_URI ?? 'amqp://localhost');
+  await eventPublisher.connect();
 
-// 2. Routes
-app.post('/transactions', handleCreateTransaction);
+  const container = new AppContainer({
+    userRepository,
+    eventPublisher,
+  });
 
-const server = app.listen(3000, () => {
-  console.log('API Gateway running on port 3000');
+  app.post(
+    '/users',
+    async (
+      req: Request<Record<string, never>, UserCreatedResponse | { error: string }, CreateUserRequest, Record<string, never>>,
+      res: Response<UserCreatedResponse | { error: string }>
+    ) => {
+      try {
+        const response = await container.createUserUseCase.execute(req.body);
+        res.status(201).json(response);
+      } catch (err: unknown) {
+        const error = err as Error & { status?: number };
+
+        if (typeof error.status === 'number') {
+          res.status(error.status).json({ error: error.message });
+          return;
+        }
+
+        res.status(500).json({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const server = app.listen(PORT, () => {
+    console.log(`API Gateway running on port ${PORT}`);
+  });
+
+  setupGracefulShutdown(server, [
+    userRepository,
+    eventPublisher
+  ]);
+}
+
+bootstrap().catch((err) => {
+  console.error('Fatal API Application Bootstrap failure:', err);
+  process.exit(1);
 });
-
-// 3. Graceful Shutdown
-setupGracefulShutdown(server, []);

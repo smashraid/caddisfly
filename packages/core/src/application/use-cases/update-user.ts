@@ -1,23 +1,22 @@
-import { UserId, Email, UserNotFoundError, DuplicateEmailError } from '../../domain/entities/user.js';
-import type { IUserRepository, IEventPublisher } from '../ports/user.ports.js';
-import type { UpdateUserRequest } from '../contracts/user.request.js';
-import type { UserResponse } from '../contracts/user.response.js';
+import { UserId, UserNotFoundError, DuplicateEmailError } from '../../index.js';
+import { IUserRepositoryPort, IEventPublisherPort } from '../ports/user.ports.js';
+import { UpdateUserRequest, UserResponse } from '../contracts/index.js';
 
 export class UpdateUserUseCase {
   constructor(
-    private readonly userRepo: IUserRepository,
-    private readonly eventPublisher: IEventPublisher,
+    private readonly userRepo: IUserRepositoryPort,
+    private readonly eventPublisher: IEventPublisherPort,
   ) {}
 
   async execute(id: string, input: UpdateUserRequest): Promise<UserResponse> {
-    const user = await this.userRepo.findById(UserId.create(id));
+    const userId = id as UserId;
+    const user = await this.userRepo.findById(userId);
     if (!user) {
       throw new UserNotFoundError(id);
     }
 
     if (input.email) {
-      const email = Email.create(input.email);
-      const existing = await this.userRepo.findByEmail(email);
+      const existing = await this.userRepo.findByEmail(input.email);
       if (existing && existing.id !== user.id) {
         throw new DuplicateEmailError(input.email);
       }
@@ -31,14 +30,14 @@ export class UpdateUserUseCase {
     await this.userRepo.save(user);
 
     const events = user.pullDomainEvents();
-    for (const event of events) {
-      await this.eventPublisher.publish(event);
+    if (events.length > 0) {
+      await this.eventPublisher.publishBatch(events);
     }
 
     return {
-      id: user.id.toString(),
-      email: user.email.toString(),
-      name: user.name.toString(),
+      id: user.id,
+      email: user.email,
+      name: user.name,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };

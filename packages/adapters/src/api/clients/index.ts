@@ -1,0 +1,1 @@
+export { ExternalUserHttpAdapter } from './external-user-http.adapter.js';

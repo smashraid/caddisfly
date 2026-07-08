@@ -1,13 +1,6 @@
 export {
   User,
-  UserId,
-  Email,
-  UserName,
-  UserCreatedEvent,
-  UserUpdatedEvent,
-  InvalidEmailError,
-  InvalidUserNameError,
-  UserNotFoundError,
-  DuplicateEmailError,
+  UserPropsSchema,
   type UserProps,
+  type UserId,
 } from './user.js';

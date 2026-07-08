@@ -1,7 +1,6 @@
 export type {
-  IUserRepository,
-  IEventPublisher,
-  IUserOperations,
+  IUserRepositoryPort,
+  IEventPublisherPort,
   PaginationOptions,
   PaginatedResult,
 } from './user.ports.js';

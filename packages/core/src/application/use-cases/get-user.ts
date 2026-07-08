@@ -1,20 +1,20 @@
-import { UserId, UserNotFoundError } from '../../domain/entities/user.js';
-import type { IUserRepository } from '../ports/user.ports.js';
-import type { UserResponse } from '../contracts/user.response.js';
+import { UserId, UserNotFoundError } from '../../index.js';
+import { IUserRepositoryPort } from '../ports/user.ports.js';
+import { UserResponse } from '../contracts/index.js';
 
 export class GetUserUseCase {
-  constructor(private readonly userRepo: IUserRepository) {}
+  constructor(private readonly userRepo: IUserRepositoryPort) {}
 
   async execute(id: string): Promise<UserResponse> {
-    const user = await this.userRepo.findById(UserId.create(id));
+    const user = await this.userRepo.findById(id as UserId);
     if (!user) {
       throw new UserNotFoundError(id);
     }
 
     return {
-      id: user.id.toString(),
-      email: user.email.toString(),
-      name: user.name.toString(),
+      id: user.id,
+      email: user.email,
+      name: user.name,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };

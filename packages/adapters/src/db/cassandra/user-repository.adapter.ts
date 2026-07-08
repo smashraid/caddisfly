@@ -1,6 +1,16 @@
-import type { IUserRepository, PaginatedResult } from '@caddisfly/core';
-import { User, UserId, Email } from '@caddisfly/core';
-import type { Client } from 'cassandra-driver';
+import { 
+  type IUserRepositoryPort, 
+  type PaginatedResult, 
+  type UserId, 
+  User 
+} from '@caddisfly/core';
+import { Client } from 'cassandra-driver';
+
+export interface CassandraConfig {
+  contactPoints: string[];
+  localDataCenter: string;
+  keyspace: string;
+}
 
 interface UserRow {
   id: string;
@@ -10,25 +20,54 @@ interface UserRow {
   updated_at: Date;
 }
 
-export class CassandraUserRepository implements IUserRepository {
-  constructor(private client: Client) {}
+export class CassandraUserRepositoryAdapter implements IUserRepositoryPort {
+  private readonly client: Client;
+  private isConnected = false;
+
+  constructor(private readonly config: CassandraConfig) {
+    this.client = new Client({
+      contactPoints: this.config.contactPoints,
+      localDataCenter: this.config.localDataCenter,
+      keyspace: this.config.keyspace,
+    });
+  }
+
+  async connect(): Promise<void> {
+    if (!this.isConnected) {
+      await this.client.connect();
+      this.isConnected = true;
+    }
+  }
+
+  async close(): Promise<void> {
+    if (this.isConnected) {
+      await this.client.shutdown();
+      this.isConnected = false;
+    }
+  }
+
+  private async ensureConnected(): Promise<void> {
+    if (!this.isConnected) {
+      await this.connect();
+    }
+  }
 
   async findById(id: UserId): Promise<User | null> {
+    await this.ensureConnected();
     const result = await this.client.execute(
       'SELECT id, email, name, created_at, updated_at FROM users WHERE id = ?',
-      [id.toString()],
+      [id],
       { prepare: true }
     );
     const row = result.rows[0];
     return row ? this.toDomain(row as unknown as UserRow) : null;
   }
 
-  async findByEmail(email: Email): Promise<User | null> {
-    // Cassandra requires a secondary index or separate table for email lookups
-    // Using ALLOW FILTERING for simplicity — in production, use a lookup table
+  async findByEmail(email: string): Promise<User | null> {
+    await this.ensureConnected();
     const result = await this.client.execute(
       'SELECT id, email, name, created_at, updated_at FROM users WHERE email = ? ALLOW FILTERING',
-      [email.toString()],
+      [email],
       { prepare: true }
     );
     const row = result.rows[0];
@@ -36,8 +75,8 @@ export class CassandraUserRepository implements IUserRepository {
   }
 
   async findAll(options?: { limit: number; offset: number }): Promise<PaginatedResult<User>> {
+    await this.ensureConnected();
     const limit = options?.limit ?? 20;
-    // Cassandra doesn't support OFFSET — use token paging in production
     const result = await this.client.execute(
       'SELECT id, email, name, created_at, updated_at FROM users LIMIT ?',
       [limit],
@@ -46,20 +85,21 @@ export class CassandraUserRepository implements IUserRepository {
 
     return {
       data: result.rows.map(r => this.toDomain(r as unknown as UserRow)),
-      total: result.rows.length, // Approximate — Cassandra doesn't do exact counts efficiently
+      total: result.rows.length, 
       limit,
       offset: options?.offset ?? 0,
     };
   }
 
   async save(user: User): Promise<void> {
+    await this.ensureConnected();
     await this.client.execute(
       `INSERT INTO users (id, email, name, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?)`,
       [
-        user.id.toString(),
-        user.email.toString(),
-        user.name.toString(),
+        user.id,
+        user.email,
+        user.name,
         user.createdAt,
         user.updatedAt,
       ],
@@ -68,22 +108,21 @@ export class CassandraUserRepository implements IUserRepository {
   }
 
   async delete(id: UserId): Promise<void> {
+    await this.ensureConnected();
     await this.client.execute(
       'DELETE FROM users WHERE id = ?',
-      [id.toString()],
+      [id],
       { prepare: true }
     );
   }
 
   private toDomain(row: UserRow): User {
     return User.reconstitute({
-      id: UserId.create(row.id),
-      email: Email.create(row.email),
+      id: row.id,
+      email: row.email,
       name: row.name,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     });
   }
 }
-
-export { CassandraUserRepository as UserRepository };
