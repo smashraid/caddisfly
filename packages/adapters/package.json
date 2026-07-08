@@ -1,0 +1,66 @@
+{
+  "name": "@caddisfly/adapters",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    },
+    "./db/mongo": {
+      "import": "./src/db/mongo/index.ts",
+      "types": "./src/db/mongo/index.ts"
+    },
+    "./db/postgres": {
+      "import": "./src/db/postgres/index.ts",
+      "types": "./src/db/postgres/index.ts"
+    },
+    "./db/cassandra": {
+      "import": "./src/db/cassandra/index.ts",
+      "types": "./src/db/cassandra/index.ts"
+    },
+    "./db/orchestrator": {
+      "import": "./src/db/orchestrator/index.ts",
+      "types": "./src/db/orchestrator/index.ts"
+    },
+    "./api/rest": {
+      "import": "./src/api/rest/index.ts",
+      "types": "./src/api/rest/index.ts"
+    },
+    "./api/grpc": {
+      "import": "./src/api/grpc/index.ts",
+      "types": "./src/api/grpc/index.ts"
+    },
+    "./api/gateway": {
+      "import": "./src/api/gateway/index.ts",
+      "types": "./src/api/gateway/index.ts"
+    },
+    "./messaging/kafka": {
+      "import": "./src/messaging/kafka/index.ts",
+      "types": "./src/messaging/kafka/index.ts"
+    },
+    "./messaging/rabbitmq": {
+      "import": "./src/messaging/rabbitmq/index.ts",
+      "types": "./src/messaging/rabbitmq/index.ts"
+    }
+  },
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts\"",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@caddisfly/core": "workspace:^",
+    "@grpc/grpc-js": "^1.14.4",
+    "amqplib": "^2.0.1",
+    "cassandra-driver": "^4.9.0",
+    "express": "^5.2.1",
+    "fastify": "^5.10.0",
+    "kafkajs": "^2.2.4",
+    "mongodb": "^7.5.0",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "extends": "../../packages/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    
+    /* Core Package Specific Rules */
+    "noUnusedLocals": true,                      /* Error on unused local variables */
+    "noUnusedParameters": true,                  /* Error on unused function parameters */
+    "noImplicitReturns": true,                   /* Ensure all code paths in functions return a value */
+    "noFallthroughCasesInSwitch": true           /* Prevent accidental fallthroughs in switches */
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules", 
+    "dist", 
+    "**/*.spec.ts", 
+    "**/*.test.ts"
+  ]
+}
