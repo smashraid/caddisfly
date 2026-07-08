@@ -1,43 +1,45 @@
+// packages/adapters/src/messaging/rabbitmq/event-subscriber.adapter.ts
 import { type UserDomainEvent } from '@caddisfly/core';
-import amqp, { type ChannelModel, type Channel } from 'amqplib';
+import amqp, { type Channel } from 'amqplib';
+
+export interface SubscribeOptions {
+  groupId?: string;
+  prefetch?: number;
+  maxRetries?: number;
+}
 
 export class RabbitEventSubscriberAdapter {
-  private connection!: ChannelModel;
-  private channel!: Channel;
-  private isConnected = false;
-  private readonly consumers: Map<string, string> = new Map(); // tracks: queue -> consumerTag
+  private readonly consumers: Map<string, string> = new Map();
 
-  constructor(private readonly uri: string) {}
-
-  async connect(): Promise<void> {
-    if (!this.isConnected) {
-      this.connection = await amqp.connect(this.uri);
-      this.channel = await this.connection.createChannel();
-      this.isConnected = true;
-    }
-  }
+  constructor(private readonly channel: Channel) { }
 
   async subscribe(
     topic: string,
     handler: (event: UserDomainEvent) => Promise<void>,
-    options?: { groupId?: string; prefetch?: number }
+    options?: SubscribeOptions
   ): Promise<void> {
-    await this.connect();
-    
     const exchange = this.toExchange(topic);
-    await this.channel.assertExchange(exchange, 'topic', { durable: true });
+    const dlxExchange = `${exchange}.dlx`;
+    const dlqName = `${topic}.dlq`;
+    const maxRetries = options?.maxRetries ?? 3;
 
-    // Use a shared named queue for balancing across group workers, or generate an ephemeral unique queue
+    await this.channel.assertExchange(exchange, 'topic', { durable: true });
+    await this.channel.assertExchange(dlxExchange, 'fanout', { durable: true });
+    await this.channel.assertQueue(dlqName, { durable: true });
+    await this.channel.bindQueue(dlqName, dlxExchange, '');
+
     const queueName = options?.groupId
       ? `${topic}-${options.groupId}`
       : `${topic}-${crypto.randomUUID()}`;
 
     const { queue } = await this.channel.assertQueue(queueName, {
       durable: true,
-      autoDelete: !options?.groupId, // Ephemeral queues drop out when listeners close down
+      autoDelete: !options?.groupId,
+      arguments: {
+        'x-dead-letter-exchange': dlxExchange,
+      },
     });
 
-    // Bind queue using standard wildcard matching
     await this.channel.bindQueue(queue, exchange, '#');
 
     if (options?.prefetch) {
@@ -49,37 +51,39 @@ export class RabbitEventSubscriberAdapter {
 
       try {
         const rawEvent = JSON.parse(msg.content.toString());
-        
-        // Re-hydrate plain JSON strings back into robust Javascript Date entities
-        const event: UserDomainEvent = {
-          ...rawEvent,
-          occurredAt: new Date(rawEvent.occurredAt),
-        };
+        const event: UserDomainEvent = { ...rawEvent, occurredAt: new Date(rawEvent.occurredAt) };
 
         await handler(event);
         this.channel.ack(msg);
-      } catch {
-        // Safe rejection strategy: send directly to a dead-letter destination without immediate re-queue looping
-        //TODO Log error
-        this.channel.nack(msg, false, false);
+      } catch (err) {
+        this.handleFailure(msg, maxRetries, err);
       }
     });
 
     this.consumers.set(queue, consumerTag);
   }
 
-  async close(): Promise<void> {
-    if (this.isConnected) {
-      // Unsubscribe all running consumers before tearing down network channels
-      for (const [, consumerTag] of this.consumers.entries()) {
-        await this.channel.cancel(consumerTag);
-      }
-      this.consumers.clear();
-      
-      await this.channel.close();
-      await this.connection.close();
-      this.isConnected = false;
+  private handleFailure(msg: amqp.ConsumeMessage, maxRetries: number, err: unknown): void {
+    const deathHeader = msg.properties.headers?.['x-death'] as Array<{ count: number }> | undefined;
+    const attempts = deathHeader?.[0]?.count ?? 0;
+
+    console.error(`Message processing failed (attempt ${attempts + 1}):`, err);
+
+    if (attempts >= maxRetries) {
+      // Exhausted retries: nack without requeue -> routed to DLX -> lands in the real DLQ
+      this.channel.nack(msg, false, false);
+    } else {
+      // Still has retries left: requeue. Note this requeues to the head of the
+      // *same* queue immediately — see the backoff caveat below.
+      this.channel.nack(msg, false, true);
     }
+  }
+
+  async close(): Promise<void> {
+    for (const [, consumerTag] of this.consumers.entries()) {
+      await this.channel.cancel(consumerTag);
+    }
+    this.consumers.clear();
   }
 
   private toExchange(topic: string): string {

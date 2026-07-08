@@ -10,10 +10,12 @@
   },
   "scripts": {
     "lint": "eslint \"src/**/*.ts\"",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist"
   },
   "devDependencies": {
-    "@types/node": "^26.1.0"
+    "@types/node": "^26.1.0",
+    "tsup": "^8.5.1"
   },
   "dependencies": {
     "zod": "^4.4.3"

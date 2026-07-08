@@ -3,6 +3,7 @@ import {
   ensureUserIndexes,
   MongoConnection,
   MongoUserRepositoryAdapter,
+  RabbitConnection,
   RabbitEventPublisherAdapter
 } from '@caddisfly/adapters';
 import {
@@ -25,10 +26,12 @@ async function bootstrap() {
 
   await mongoConnection.connect();
   await ensureUserIndexes(mongoConnection);
-
   const userRepository = new MongoUserRepositoryAdapter(mongoConnection.getDb());
-  const eventPublisher = new RabbitEventPublisherAdapter(process.env.RABBIT_URI ?? 'amqp://localhost');
-  await eventPublisher.connect();
+
+  const rabbitConnection = new RabbitConnection(process.env.RABBIT_URI ?? 'amqp://localhost');
+  await rabbitConnection.connect();
+  const publishChannel = await rabbitConnection.createConfirmChannel();
+  const eventPublisher = new RabbitEventPublisherAdapter(publishChannel);
 
   const container = new AppContainer({
     userRepository,
@@ -63,7 +66,7 @@ async function bootstrap() {
   });
 
   setupGracefulShutdown(server, [
-    mongoConnection,
+    mongoConnection
   ]);
 }
 

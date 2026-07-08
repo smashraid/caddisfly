@@ -1,12 +1,18 @@
 // ─── Database Adapters ────────────────────────────────────────────────────────
-export { ensureUserIndexes } from './db/mongo/index.js'
+export { 
+  ensureUserIndexes, 
+  MongoConnection, 
+  MongoUserRepositoryAdapter 
+} from './db/mongo/index.js'
 
-export { MongoConnection } from './db/mongo/connection.js'
+export { 
+  CassandraUserRepositoryAdapter, 
+  CassandraEventStoreAdapter 
+} from './db/cassandra/index.js';
 
-export { CassandraUserRepositoryAdapter } from './db/cassandra/user-repository.adapter.js';
-export { CassandraEventStoreAdapter } from './db/cassandra/event-store.adapter.js';
-export { MongoUserRepositoryAdapter } from './db/mongo/user-repository.adapter.js';
-export { PostgresUserRepositoryAdapter } from './db/postgres/user-repository.adapter.js';
+export { 
+  PostgresUserRepositoryAdapter 
+} from './db/postgres/index.js';
 
 // ─── DB Orchestrator ──────────────────────────────────────────────────────────
 export {
@@ -15,13 +21,19 @@ export {
 } from './db/orchestrator/index.js';
 
 // ─── Messaging Adapters ───────────────────────────────────────────────────────
-export { KafkaEventPublisherAdapter } from './messaging/kafka/event-publisher.adapter.js';
-export { KafkaEventSubscriberAdapter } from './messaging/kafka/event-subscriber.adapter.js';
-export { RabbitEventPublisherAdapter } from './messaging/rabbitmq/event-publisher.adapter.js';
-export { RabbitEventSubscriberAdapter } from './messaging/rabbitmq/event-subscriber.adapter.js';
+export {
+  KafkaEventPublisherAdapter,
+  KafkaEventSubscriberAdapter
+} from './messaging/kafka/index.js';
+
+export {
+  RabbitConnection,
+  RabbitEventPublisherAdapter,
+  RabbitEventSubscriberAdapter
+} from './messaging/rabbitmq/index.js'
 
 // ─── External API Adapters ────────────────────────────────────────────────────
-export { ExternalUserHttpAdapter } from './api/clients/external-user-http.adapter.js';
+export { ExternalUserHttpAdapter } from './api/clients/index.js';
 
 // ─── Gateway/Framework Adapters ───────────────────
 // export { createExpressGateway } from './api/gateway/express.js';

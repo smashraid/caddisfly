@@ -1,8 +1,8 @@
 import { type IEventStorePort, type UserDomainEvent } from '@caddisfly/core';
-import type { Client as CassandraClient } from 'cassandra-driver';
+import type { Client } from 'cassandra-driver';
 
 export class CassandraEventStoreAdapter implements IEventStorePort {
-  constructor(private readonly client: CassandraClient) {}
+  constructor(private readonly client: Client) {}
 
   async append(aggregateId: string, event: UserDomainEvent): Promise<void> {
     await this.client.execute(

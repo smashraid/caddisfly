@@ -12,6 +12,7 @@
     "moduleResolution": "NodeNext",
     "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
+    "ignoreDeprecations": "6.0",
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",

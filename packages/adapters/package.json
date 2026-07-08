@@ -46,7 +46,8 @@
   },
   "scripts": {
     "lint": "eslint \"src/**/*.ts\"",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist"
   },
   "dependencies": {
     "@caddisfly/core": "workspace:^",
@@ -61,6 +62,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
-    "@types/node": "^26.1.0"
+    "@types/node": "^26.1.0",
+    "tsup": "^8.5.1"
   }
 }
