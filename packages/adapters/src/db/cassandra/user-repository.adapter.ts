@@ -1,16 +1,10 @@
-import { 
-  type IUserRepositoryPort, 
-  type PaginatedResult, 
-  type UserId, 
-  User 
+import {
+  type IUserRepositoryPort,
+  type PaginatedResult,
+  type UserId,
+  User
 } from '@caddisfly/core';
 import { Client } from 'cassandra-driver';
-
-export interface CassandraConfig {
-  contactPoints: string[];
-  localDataCenter: string;
-  keyspace: string;
-}
 
 interface UserRow {
   id: string;
@@ -21,39 +15,9 @@ interface UserRow {
 }
 
 export class CassandraUserRepositoryAdapter implements IUserRepositoryPort {
-  private readonly client: Client;
-  private isConnected = false;
-
-  constructor(private readonly config: CassandraConfig) {
-    this.client = new Client({
-      contactPoints: this.config.contactPoints,
-      localDataCenter: this.config.localDataCenter,
-      keyspace: this.config.keyspace,
-    });
-  }
-
-  async connect(): Promise<void> {
-    if (!this.isConnected) {
-      await this.client.connect();
-      this.isConnected = true;
-    }
-  }
-
-  async close(): Promise<void> {
-    if (this.isConnected) {
-      await this.client.shutdown();
-      this.isConnected = false;
-    }
-  }
-
-  private async ensureConnected(): Promise<void> {
-    if (!this.isConnected) {
-      await this.connect();
-    }
-  }
+  constructor(private client: Client) { }
 
   async findById(id: UserId): Promise<User | null> {
-    await this.ensureConnected();
     const result = await this.client.execute(
       'SELECT id, email, name, created_at, updated_at FROM users WHERE id = ?',
       [id],
@@ -64,7 +28,6 @@ export class CassandraUserRepositoryAdapter implements IUserRepositoryPort {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    await this.ensureConnected();
     const result = await this.client.execute(
       'SELECT id, email, name, created_at, updated_at FROM users WHERE email = ? ALLOW FILTERING',
       [email],
@@ -75,7 +38,6 @@ export class CassandraUserRepositoryAdapter implements IUserRepositoryPort {
   }
 
   async findAll(options?: { limit: number; offset: number }): Promise<PaginatedResult<User>> {
-    await this.ensureConnected();
     const limit = options?.limit ?? 20;
     const result = await this.client.execute(
       'SELECT id, email, name, created_at, updated_at FROM users LIMIT ?',
@@ -85,14 +47,13 @@ export class CassandraUserRepositoryAdapter implements IUserRepositoryPort {
 
     return {
       data: result.rows.map(r => this.toDomain(r as unknown as UserRow)),
-      total: result.rows.length, 
+      total: result.rows.length,
       limit,
       offset: options?.offset ?? 0,
     };
   }
 
   async save(user: User): Promise<void> {
-    await this.ensureConnected();
     await this.client.execute(
       `INSERT INTO users (id, email, name, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?)`,
@@ -108,7 +69,6 @@ export class CassandraUserRepositoryAdapter implements IUserRepositoryPort {
   }
 
   async delete(id: UserId): Promise<void> {
-    await this.ensureConnected();
     await this.client.execute(
       'DELETE FROM users WHERE id = ?',
       [id],

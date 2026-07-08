@@ -56,10 +56,6 @@ graph TD
 * **Adapters (Infrastructure)**: The implementation of the Ports. Whether it is `db-mongo` or `db-cassandra`, these adapters fulfill the contract, allowing the system to talk to different databases seamlessly.
 * **Shared Packages**: Foundational code like the `logger` is shared across the entire monorepo, ensuring standardized telemetry formatting.
 
-This structure is highly professional and demonstrates that you understand the complexities of building scalable, maintainable distributed systems.
-
-**Does this Mermaid diagram and description accurately capture the vision you have for your portfolio? If so, we can jump into writing the first actual Use Case logic.**
-
 ## 🏗 Architecture
 
 This project implements the Ports and Adapters (Hexagonal) pattern to ensure domain logic remains independent of infrastructure (databases, web frameworks, external APIs).

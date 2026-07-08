@@ -9,7 +9,6 @@ export abstract class DomainError extends Error {
 }
 
 export class DomainValidationError extends DomainError {
-  readonly status = 400;
   readonly issues: z.ZodError['issues'];
   constructor(issues: z.ZodError['issues']) {
     super(`Validation failed: ${issues.map(i => i.message).join(', ')}`);
@@ -17,32 +16,28 @@ export class DomainValidationError extends DomainError {
   }
 }
 
-export class InvalidEmailError extends Error {
-  readonly status = 404;
+export class InvalidEmailError extends DomainError {
   constructor(email: string) {
     super(`Invalid email format: ${email}`);
     this.name = 'InvalidEmailError';
   }
 }
 
-export class InvalidUserNameError extends Error {
-  readonly status = 404;
+export class InvalidUserNameError extends DomainError {
   constructor(message: string) {
     super(message);
     this.name = 'InvalidUserNameError';
   }
 }
 
-export class UserNotFoundError extends Error {
-  readonly status = 404;
+export class UserNotFoundError extends DomainError {
   constructor(userId: string) {
     super(`User not found: ${userId}`);
     this.name = 'UserNotFoundError';
   }
 }
 
-export class DuplicateEmailError extends Error {
-  readonly status = 409;
+export class DuplicateEmailError extends DomainError {
   constructor(email: string) {
     super(`Email already in use: ${email}`);
     this.name = 'DuplicateEmailError';

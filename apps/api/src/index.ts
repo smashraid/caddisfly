@@ -1,5 +1,7 @@
 import express, { type Request, type Response } from 'express';
 import {
+  ensureUserIndexes,
+  MongoConnection,
   MongoUserRepositoryAdapter,
   RabbitEventPublisherAdapter
 } from '@caddisfly/adapters';
@@ -16,10 +18,15 @@ async function bootstrap() {
   app.use(express.json());
   app.use(requestContextMiddleware);
 
-  const userRepository = new MongoUserRepositoryAdapter({
+  const mongoConnection = new MongoConnection({
+    uri: process.env.MONGO_URI ?? 'mongodb://localhost:27017',
     dbName: process.env.DB_NAME ?? 'caddisfly',
-    uri: process.env.MONGO_URI ?? 'mongodb://localhost:27017'
   });
+
+  await mongoConnection.connect();
+  await ensureUserIndexes(mongoConnection);
+
+  const userRepository = new MongoUserRepositoryAdapter(mongoConnection.getDb());
   const eventPublisher = new RabbitEventPublisherAdapter(process.env.RABBIT_URI ?? 'amqp://localhost');
   await eventPublisher.connect();
 
@@ -56,8 +63,7 @@ async function bootstrap() {
   });
 
   setupGracefulShutdown(server, [
-    userRepository,
-    eventPublisher
+    mongoConnection,
   ]);
 }
 

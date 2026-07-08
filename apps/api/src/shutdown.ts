@@ -1,9 +1,9 @@
 // src/shutdown.ts
 import { Server } from 'node:http';
 import { logger } from '@caddisfly/logger';
-import { Closable } from './types/index.js';
+import { MongoConnection } from '@caddisfly/adapters';
 
-export const setupGracefulShutdown = (server: Server, dependencies: Closable[]) => {
+export const setupGracefulShutdown = (server: Server, dependencies: MongoConnection[]) => {
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}. Starting graceful shutdown...`);
 

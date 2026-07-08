@@ -1,4 +1,8 @@
 // ─── Database Adapters ────────────────────────────────────────────────────────
+export { ensureUserIndexes } from './db/mongo/index.js'
+
+export { MongoConnection } from './db/mongo/connection.js'
+
 export { CassandraUserRepositoryAdapter } from './db/cassandra/user-repository.adapter.js';
 export { CassandraEventStoreAdapter } from './db/cassandra/event-store.adapter.js';
 export { MongoUserRepositoryAdapter } from './db/mongo/user-repository.adapter.js';

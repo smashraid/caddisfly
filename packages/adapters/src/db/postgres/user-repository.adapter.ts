@@ -1,10 +1,10 @@
-import { 
-  type IUserRepositoryPort, 
-  type PaginatedResult, 
-  type UserId, 
-  User 
+import {
+  type IUserRepositoryPort,
+  type PaginatedResult,
+  type UserId,
+  User
 } from '@caddisfly/core';
-import postgres, {type Sql } from 'postgres';
+import { type Sql } from 'postgres';
 
 interface UserRow {
   id: string;
@@ -15,14 +15,8 @@ interface UserRow {
 }
 
 export class PostgresUserRepositoryAdapter implements IUserRepositoryPort {
-  private readonly sql: Sql
-  constructor(connectionString: string) {
-    this.sql = postgres(connectionString);
-  }
 
-  async close(): Promise<void> {
-    await this.sql.end();
-  }
+  constructor(private readonly sql: Sql) { }
 
   async findById(id: UserId): Promise<User | null> {
     const [row] = await this.sql<UserRow[]>`
@@ -30,7 +24,7 @@ export class PostgresUserRepositoryAdapter implements IUserRepositoryPort {
       FROM users 
       WHERE id = ${id}
     `;
-    
+
     return row ? this.toDomain(row) : null;
   }
 
@@ -40,7 +34,7 @@ export class PostgresUserRepositoryAdapter implements IUserRepositoryPort {
       FROM users 
       WHERE email = ${email}
     `;
-    
+
     return row ? this.toDomain(row) : null;
   }
 

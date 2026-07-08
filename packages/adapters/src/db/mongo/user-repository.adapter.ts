@@ -2,14 +2,10 @@ import {
   type IUserRepositoryPort, 
   type PaginatedResult, 
   type UserId, 
+  DuplicateEmailError, 
   User 
 } from '@caddisfly/core';
-import { type Db, type Collection, MongoClient } from 'mongodb';
-
-export interface MongoConfig {
-  uri: string;
-  dbName: string;
-}
+import { type Db, type Collection } from 'mongodb';
 
 interface UserDocument {
   _id: string;
@@ -20,50 +16,23 @@ interface UserDocument {
 }
 
 export class MongoUserRepositoryAdapter implements IUserRepositoryPort {
-  private client!: MongoClient;
-  private db!: Db;
-  private isConnected = false;
-  private collection!: Collection<UserDocument>;
+  private readonly collection: Collection<UserDocument>;
 
-  constructor(private readonly config: MongoConfig) {}
-
-  async connect(): Promise<void> {
-    if (!this.isConnected) {
-      this.client = new MongoClient(this.config.uri);
-      await this.client.connect();
-      this.db = this.client.db(this.config.dbName);
-      this.collection = this.db.collection('users');
-      this.isConnected = true;
-    }
-  }
-
-  async close(): Promise<void> {
-    if (this.isConnected) {
-      await this.client.close();
-      this.isConnected = false;
-    }
-  }
-
-  private async ensureConnected(): Promise<void> {
-    if (!this.isConnected) {
-      await this.connect();
-    }
+   constructor(db: Db) {
+    this.collection = db.collection<UserDocument>('users');
   }
 
   async findById(id: UserId): Promise<User | null> {
-    await this.ensureConnected();
     const doc = await this.collection.findOne({ _id: id });
     return doc ? this.toDomain(doc) : null;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    await this.ensureConnected();
     const doc = await this.collection.findOne({ email });
     return doc ? this.toDomain(doc) : null;
   }
 
   async findAll(options?: { limit: number; offset: number }): Promise<PaginatedResult<User>> {
-    await this.ensureConnected();
     const limit = options?.limit ?? 20;
     const offset = options?.offset ?? 0;
 
@@ -85,23 +54,21 @@ export class MongoUserRepositoryAdapter implements IUserRepositoryPort {
   }
 
   async save(user: User): Promise<void> {
-    await this.ensureConnected();
-    await this.collection.updateOne(
-      { _id: user.id },
-      {
-        $set: {
-          email: user.email,
-          name: user.name,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
-      },
-      { upsert: true }
-    );
+    try {
+      await this.collection.updateOne(
+        { _id: user.id },
+        { $set: { email: user.email, name: user.name, createdAt: user.createdAt, updatedAt: user.updatedAt } },
+        { upsert: true }
+      );
+    } catch (err: unknown) {
+      if (isMongoDuplicateKeyError(err)) {
+        throw new DuplicateEmailError(user.email);
+      }
+      throw err;
+    }
   }
 
   async delete(id: UserId): Promise<void> {
-    await this.ensureConnected();
     await this.collection.deleteOne({ _id: id });
   }
 
@@ -114,4 +81,8 @@ export class MongoUserRepositoryAdapter implements IUserRepositoryPort {
       updatedAt: doc.updatedAt,
     });
   }
+}
+
+function isMongoDuplicateKeyError(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code: unknown }).code === 11000;
 }
