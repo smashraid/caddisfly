@@ -5,3 +5,31 @@ pnpm add pino pino-pretty -w
 # Adding the config as a devDependency to your api-gateway
 pnpm --filter @caddisfly/api add -D @repo/typescript-config --workspace
 pnpm --filter @caddisfly/db-mongo add @caddisfly/domain --workspace
+
+#Cassandra
+
+CREATE KEYSPACE IF NOT EXISTS caddisfly
+WITH replication = {
+    'class': 'NetworkTopologyStrategy',
+    'datacenter1': 1
+};
+
+  const cassandraConnection = new CassandraConnection({
+    contactPoints: (process.env.CASSANDRA_CONTACT_POINTS ?? '127.0.0.1').split(','),
+    localDataCenter: process.env.CASSANDRA_LOCAL_DC ?? 'datacenter1',
+    keyspace: process.env.CASSANDRA_KEYSPACE ?? 'caddisfly',
+  });
+  await cassandraConnection.connect();
+  ensureCassandraTables(cassandraConnection);
+  const userRepository = new CassandraUserRepositoryAdapter(cassandraConnection.getClient());
+
+
+#Mongo
+  const mongoConnection = new MongoConnection({
+    uri: process.env.MONGO_URI ?? 'mongodb://localhost:27017',
+    dbName: process.env.DB_NAME ?? 'caddisfly',
+  });
+
+  await mongoConnection.connect();
+  await ensureUserIndexes(mongoConnection);
+  const userRepository = new MongoUserRepositoryAdapter(mongoConnection.getDb());
