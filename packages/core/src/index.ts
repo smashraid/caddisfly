@@ -22,6 +22,7 @@ export {
   InvalidUserNameError,
   UserNotFoundError,
   DuplicateEmailError,
+  type ValidationIssue
 } from './domain/errors/user.errors.js';
 
 // ─── 4. Application Ports (Interfaces for Drivers) ───────────────────────────

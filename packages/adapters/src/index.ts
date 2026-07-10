@@ -5,12 +5,14 @@ export {
   MongoUserRepositoryAdapter 
 } from './db/mongo/index.js'
 
-export { 
+export {
+  CassandraConnection,
   CassandraUserRepositoryAdapter, 
   CassandraEventStoreAdapter 
 } from './db/cassandra/index.js';
 
-export { 
+export {
+  PostgresConnection,
   PostgresUserRepositoryAdapter 
 } from './db/postgres/index.js';
 
@@ -22,12 +24,15 @@ export {
 
 // ─── Messaging Adapters ───────────────────────────────────────────────────────
 export {
+  KafkaConnection,
+  type KafkaConnectionConfig,
   KafkaEventPublisherAdapter,
   KafkaEventSubscriberAdapter
 } from './messaging/kafka/index.js';
 
 export {
   RabbitConnection,
+  type RabbitConnectionConfig,
   RabbitEventPublisherAdapter,
   RabbitEventSubscriberAdapter
 } from './messaging/rabbitmq/index.js'

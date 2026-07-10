@@ -1,102 +1,59 @@
-import express, { type Request, type Response } from 'express';
+import express from 'express';
 import {
   CassandraUserRepositoryAdapter,
   RabbitConnection,
-  RabbitEventPublisherAdapter
+  RabbitEventPublisherAdapter,
+  CassandraConnection,
 } from '@caddisfly/adapters';
-import {
-  DomainError,
-  DomainValidationError,
-  DuplicateEmailError,
-  UserNotFoundError,
-  type CreateUserRequest,
-  type UserCreatedResponse,
-} from '@caddisfly/core';
-import { requestContextMiddleware } from './middleware/request-context.js';
-import { setupGracefulShutdown } from './shutdown.js';
-import { AppContainer } from './container.js';
-import { CassandraConnection } from '../../../packages/adapters/src/db/cassandra/connection.js';
 import { ensureCassandraTables } from '@caddisfly/adapters/db/cassandra';
+import { setupGracefulShutdown } from './shutdown.js';
+import { createUserRouter } from './routes/user.routes.js';
+import type { UserControllerDependencies } from './controllers/user.controller.js';
+import { requestContextMiddleware } from './middleware/request-context.js';
+import { globalErrorMiddleware } from './middleware/error-handler.js';
 
 async function bootstrap() {
   const app = express();
   app.use(express.json());
-  app.use(requestContextMiddleware);
 
+  // ─── Infrastructure Setup ─────────────────────────────────────────────────
   const cassandraConnection = new CassandraConnection({
     contactPoints: (process.env.CASSANDRA_CONTACT_POINTS ?? '127.0.0.1').split(','),
     localDataCenter: process.env.CASSANDRA_LOCAL_DC ?? 'datacenter1',
     keyspace: process.env.CASSANDRA_KEYSPACE ?? 'caddisfly',
   });
   await cassandraConnection.connect();
-  ensureCassandraTables(cassandraConnection);
+  await ensureCassandraTables(cassandraConnection);
+
   const userRepository = new CassandraUserRepositoryAdapter(cassandraConnection.getClient());
 
-  const rabbitConnection = new RabbitConnection(process.env.RABBIT_URI ?? 'amqp://localhost');
+  const rabbitConnection = new RabbitConnection({uri: process.env.RABBIT_URI ?? 'amqp://localhost'});
   await rabbitConnection.connect();
   const publishChannel = await rabbitConnection.createConfirmChannel();
   const eventPublisher = new RabbitEventPublisherAdapter(publishChannel);
 
-  const container = new AppContainer({
-    userRepository,
-    eventPublisher,
-  });
+  // ─── Routes ───────────────────────────────────────────────────────────────
+  const deps: UserControllerDependencies = { userRepository, eventPublisher };
+  app.use('/users', createUserRouter(deps));
 
-  app.post(
-    '/users',
-    async (
-      req: Request<Record<string, never>, UserCreatedResponse | { error: string, issues?: unknown[] }, CreateUserRequest, Record<string, never>>,
-      res: Response<UserCreatedResponse | { error: string, issues?: unknown[] }>
-    ) => {
-      try {
-        const response = await container.createUserUseCase.execute(req.body);
-        res.status(201).json(response);
-      } catch (err: unknown) {
-        console.error('❌ Error caught in /users route:', err);
-        if (err instanceof DomainError) {
-          if (err instanceof DomainValidationError) {
-            res.status(400).json({
-              error: 'Validation Failed',
-              issues: err.issues
-            });
-            return;
-          }
+  app.use(requestContextMiddleware);
+  app.use(globalErrorMiddleware);
 
-          if (err.name === 'InvalidEmailError' || err.name === 'InvalidUserNameError') {
-            res.status(400).json({ error: err.message });
-            return;
-          }
-
-          if (err instanceof DuplicateEmailError) {
-            res.status(409).json({ error: err.message });
-            return;
-          }
-
-          if (err instanceof UserNotFoundError) {
-            res.status(404).json({ error: err.message });
-            return;
-          }
-
-          res.status(400).json({ error: err.message });
-          return;
-        }
-
-        res.status(500).json({ error: 'Internal Server Error' });
-      }
-    }
-  );
-
+  // ─── Start Server ───────────────────────────────────────────────────────────
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const server = app.listen(PORT, () => {
     console.log(`API Gateway running on port ${PORT}`);
   });
 
+  // ─── Graceful Shutdown ──────────────────────────────────────────────────────
   setupGracefulShutdown(server, [
-
+    cassandraConnection,
+    rabbitConnection,
+    publishChannel,
   ]);
 }
 
 bootstrap().catch((err) => {
-  console.error('Fatal API Application Bootstrap failure:', err);
+  console.error('Fatal bootstrap failure:', err);
   process.exit(1);
 });

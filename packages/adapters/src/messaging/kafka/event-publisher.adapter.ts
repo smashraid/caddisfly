@@ -1,28 +1,10 @@
 import { type IEventPublisherPort, type UserDomainEvent } from '@caddisfly/core';
-import { Kafka, type Producer, type ProducerConfig } from 'kafkajs';
+import type { Producer } from 'kafkajs';
 
 export class KafkaEventPublisherAdapter implements IEventPublisherPort {
-  private readonly producer: Producer;
-  private isConnected = false;
-
-  constructor(
-    brokers: string[],
-    clientId: string = 'caddisfly-publisher',
-    config?: ProducerConfig
-  ) {
-    const kafka = new Kafka({ clientId, brokers });
-    this.producer = kafka.producer(config);
-  }
-
-  async connect(): Promise<void> {
-    if (!this.isConnected) {
-      await this.producer.connect();
-      this.isConnected = true;
-    }
-  }
+  constructor(private readonly producer: Producer) {}
 
   async publish(event: UserDomainEvent): Promise<void> {
-    await this.ensureConnected();
     await this.producer.send({
       topic: this.toTopic(event.eventType),
       messages: [{
@@ -37,9 +19,6 @@ export class KafkaEventPublisherAdapter implements IEventPublisherPort {
   }
 
   async publishBatch(events: UserDomainEvent[]): Promise<void> {
-    await this.ensureConnected();
-
-    // Group matching events by topic for transactional/batching efficiency
     const byTopic = new Map<string, UserDomainEvent[]>();
     for (const event of events) {
       const topic = this.toTopic(event.eventType);
@@ -48,7 +27,6 @@ export class KafkaEventPublisherAdapter implements IEventPublisherPort {
       byTopic.set(topic, group);
     }
 
-    // Fire all message batches concurrently across topics
     await Promise.all(
       Array.from(byTopic.entries()).map(([topic, group]) =>
         this.producer.send({
@@ -66,21 +44,9 @@ export class KafkaEventPublisherAdapter implements IEventPublisherPort {
     );
   }
 
-  async close(): Promise<void> {
-    if (this.isConnected) {
-      await this.producer.disconnect();
-      this.isConnected = false;
-    }
-  }
-
-  private async ensureConnected(): Promise<void> {
-    if (!this.isConnected) {
-      await this.connect();
-    }
-  }
+  async close(): Promise<void> {}
 
   private toTopic(eventType: string): string {
-    // Translates 'UserCreated' into standard slugged event topics: 'events.usercreated'
     return `events.${eventType.toLowerCase()}`;
   }
 }

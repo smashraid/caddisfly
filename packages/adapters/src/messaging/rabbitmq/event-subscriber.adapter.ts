@@ -1,6 +1,5 @@
-// packages/adapters/src/messaging/rabbitmq/event-subscriber.adapter.ts
 import { type UserDomainEvent } from '@caddisfly/core';
-import amqp, { type Channel } from 'amqplib';
+import type { Channel, ConsumeMessage } from 'amqplib';
 
 export interface SubscribeOptions {
   groupId?: string;
@@ -10,80 +9,97 @@ export interface SubscribeOptions {
 
 export class RabbitEventSubscriberAdapter {
   private readonly consumers: Map<string, string> = new Map();
-
   constructor(private readonly channel: Channel) { }
 
   async subscribe(
     topic: string,
     handler: (event: UserDomainEvent) => Promise<void>,
-    options?: SubscribeOptions
+    options: SubscribeOptions = {}
   ): Promise<void> {
     const exchange = this.toExchange(topic);
-    const dlxExchange = `${exchange}.dlx`;
-    const dlqName = `${topic}.dlq`;
-    const maxRetries = options?.maxRetries ?? 3;
+    const maxRetries = options.maxRetries ?? 3;
 
     await this.channel.assertExchange(exchange, 'topic', { durable: true });
-    await this.channel.assertExchange(dlxExchange, 'fanout', { durable: true });
-    await this.channel.assertQueue(dlqName, { durable: true });
-    await this.channel.bindQueue(dlqName, dlxExchange, '');
 
-    const queueName = options?.groupId
+    // ─── DLX Setup ──────────────────────────────────────────────────────────
+    const dlxExchange = `${exchange}.dlx`;
+    const dlxQueue = `${exchange}.dlq`;
+
+    await this.channel.assertExchange(dlxExchange, 'direct', { durable: true });
+    await this.channel.assertQueue(dlxQueue, { durable: true });
+    await this.channel.bindQueue(dlxQueue, dlxExchange, topic);
+
+    // ─── Main Queue with DLX policy ─────────────────────────────────────────
+    const queueName = options.groupId
       ? `${topic}-${options.groupId}`
       : `${topic}-${crypto.randomUUID()}`;
 
     const { queue } = await this.channel.assertQueue(queueName, {
       durable: true,
-      autoDelete: !options?.groupId,
+      autoDelete: !options.groupId,
       arguments: {
         'x-dead-letter-exchange': dlxExchange,
+        'x-dead-letter-routing-key': topic,
+        'x-message-ttl': 30000, // 30s delay before retry via DLX
       },
     });
 
     await this.channel.bindQueue(queue, exchange, '#');
 
-    if (options?.prefetch) {
+    if (options.prefetch) {
       await this.channel.prefetch(options.prefetch);
     }
 
+    // ─── Consumer with Retry Logic ──────────────────────────────────────────
     const { consumerTag } = await this.channel.consume(queue, async (msg) => {
       if (!msg) return;
 
       try {
-        const rawEvent = JSON.parse(msg.content.toString());
-        const event: UserDomainEvent = { ...rawEvent, occurredAt: new Date(rawEvent.occurredAt) };
-
+        const event = this.parseMessage(msg);
         await handler(event);
         this.channel.ack(msg);
       } catch (err) {
-        this.handleFailure(msg, maxRetries, err);
+        console.error('Message handling failed:', err);
+        this.handleFailure(msg, maxRetries);
       }
     });
 
     this.consumers.set(queue, consumerTag);
   }
 
-  private handleFailure(msg: amqp.ConsumeMessage, maxRetries: number, err: unknown): void {
-    const deathHeader = msg.properties.headers?.['x-death'] as Array<{ count: number }> | undefined;
-    const attempts = deathHeader?.[0]?.count ?? 0;
-
-    console.error(`Message processing failed (attempt ${attempts + 1}):`, err);
-
-    if (attempts >= maxRetries) {
-      // Exhausted retries: nack without requeue -> routed to DLX -> lands in the real DLQ
-      this.channel.nack(msg, false, false);
-    } else {
-      // Still has retries left: requeue. Note this requeues to the head of the
-      // *same* queue immediately — see the backoff caveat below.
-      this.channel.nack(msg, false, true);
-    }
-  }
-
+  /** Cancels all active consumers. The channel is managed externally. */
   async close(): Promise<void> {
     for (const [, consumerTag] of this.consumers.entries()) {
       await this.channel.cancel(consumerTag);
     }
     this.consumers.clear();
+  }
+
+  // ─── Private Helpers ──────────────────────────────────────────────────────
+
+  private parseMessage(msg: ConsumeMessage): UserDomainEvent {
+    const rawEvent = JSON.parse(msg.content.toString());
+    return {
+      ...rawEvent,
+      occurredAt: new Date(rawEvent.occurredAt),
+    };
+  }
+
+  private handleFailure(msg: ConsumeMessage, maxRetries: number): void {
+    const currentRetry = this.getRetryCount(msg);
+
+    if (currentRetry >= maxRetries) {
+      console.warn(`Message exceeded ${maxRetries} retries, sending to DLQ`);
+      this.channel.reject(msg, false);
+      return;
+    }
+
+    this.channel.nack(msg, false, false);
+  }
+
+  private getRetryCount(msg: ConsumeMessage): number {
+    const headers = msg.properties.headers ?? {};
+    return (headers['x-retry-count'] as number) ?? 0;
   }
 
   private toExchange(topic: string): string {

@@ -1,15 +1,14 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { DomainValidationError } from '../errors/user.errors.js';
-import { UserDomainEvent } from '../events/user.events.js';
+import type { UserCreatedEvent, UserUpdatedEvent } from '../events/user.events.js';
 
-// ─── Domain Schemas & Value Objects ─────────────────────────────────────────
+// ─── Zod Schemas (validation stays in domain) ───────────────────────────────
 export const UserIdSchema = z.uuid().brand<'UserId'>();
 export type UserId = z.infer<typeof UserIdSchema>;
 
 export const EmailSchema = z.email({ message: "Invalid email format" });
 export const UserNameSchema = z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be at most 100 characters");
 
-// Unified User Schema for strict internal enforcement
 export const UserPropsSchema = z.object({
   id: UserIdSchema,
   email: EmailSchema,
@@ -20,12 +19,11 @@ export const UserPropsSchema = z.object({
 
 export type UserProps = z.infer<typeof UserPropsSchema>;
 
-
 // ─── Aggregate Root: User ───────────────────────────────────────────────────
 export class User {
-  private _domainEvents: UserDomainEvent[] = [];
+  private _domainEvents: (UserCreatedEvent | UserUpdatedEvent)[] = [];
 
-  private constructor(private props: UserProps) {}
+  private constructor(private props: UserProps) { }
 
   private static validate(data: unknown): UserProps {
     const result = UserPropsSchema.safeParse(data);
@@ -35,7 +33,6 @@ export class User {
     return result.data;
   }
 
-  // ─── Factory: Create new user ───
   static create(input: { email: string; name: string }): User {
     const now = new Date();
     const props = User.validate({
@@ -58,17 +55,15 @@ export class User {
     return user;
   }
 
-  // ─── Factory: Reconstitute from persistence ───
   static reconstitute(props: unknown): User {
     return new User(User.validate(props));
   }
 
-  // ─── Business Methods ───
   updateName(newName: string): void {
     const parsedName = UserNameSchema.parse(newName);
     this.props.name = parsedName;
     this.props.updatedAt = new Date();
-    
+
     this._domainEvents.push({
       eventType: 'UserUpdated',
       aggregateId: this.props.id,
@@ -90,8 +85,7 @@ export class User {
     });
   }
 
-  // ─── Domain Events ───
-  pullDomainEvents(): UserDomainEvent[] {
+  pullDomainEvents(): (UserCreatedEvent | UserUpdatedEvent)[] {
     const events = [...this._domainEvents];
     this._domainEvents = [];
     return events;

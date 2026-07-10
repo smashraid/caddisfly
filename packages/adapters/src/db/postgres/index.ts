@@ -1,5 +1,6 @@
-import type { PostgresConnection } from './connection.js';
+export { PostgresConnection, type PostgresConnectionConfig } from './connection.js'
 export { PostgresUserRepositoryAdapter } from './user-repository.adapter.js';
+import type { PostgresConnection } from './connection.js';
 
 export async function ensurePostgresTables(connection: PostgresConnection): Promise<void> {
     const sql = connection.getSql();

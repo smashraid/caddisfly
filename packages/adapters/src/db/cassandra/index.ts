@@ -1,3 +1,4 @@
+export { CassandraConnection, type CassandraConnectionConfig } from './connection.js'
 export { CassandraUserRepositoryAdapter } from './user-repository.adapter.js';
 export { CassandraEventStoreAdapter } from './event-store.adapter.js';
 

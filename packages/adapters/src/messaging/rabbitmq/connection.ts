@@ -1,57 +1,51 @@
-// packages/adapters/src/messaging/rabbitmq/connection.ts
-import amqp, { type ChannelModel, type ConfirmChannel, type Channel } from 'amqplib';
+import amqp, { type ChannelModel, type Channel, type ConfirmChannel } from 'amqplib';
+
+export interface RabbitConnectionConfig {
+  uri: string;
+}
 
 export class RabbitConnection {
   private connection: ChannelModel | null = null;
-  private connectPromise: Promise<void> | null = null;
 
-  constructor(private readonly uri: string) {}
+  constructor(private readonly config: RabbitConnectionConfig) {}
 
   async connect(): Promise<void> {
     if (this.connection) return;
-    if (!this.connectPromise) {
-      this.connectPromise = amqp.connect(this.uri).then((conn) => {
-        this.connection = conn;
 
-        conn.on('error', (err) => {
-          console.error('RabbitMQ connection error:', err);
-          this.connection = null;
-          this.connectPromise = null;
-        });
-        conn.on('close', () => {
-          console.error('RabbitMQ connection closed');
-          this.connection = null;
-          this.connectPromise = null;
-        });
-      });
-    }
-    await this.connectPromise;
-  }
+    this.connection = await amqp.connect(this.config.uri);
 
-  private getConnection(): ChannelModel {
-    if (!this.connection) {
-      throw new Error('RabbitConnection: not connected. Call connect() first.');
-    }
-    return this.connection;
-  }
+    this.connection.on('close', () => {
+      this.connection = null;
+    });
 
-  async createConfirmChannel(): Promise<ConfirmChannel> {
-    return this.getConnection().createConfirmChannel();
+    this.connection.on('error', (err) => {
+      console.error('RabbitMQ connection error:', err.message);
+      this.connection = null;
+    });
   }
 
   async createChannel(): Promise<Channel> {
-    return this.getConnection().createChannel();
+    if (!this.connection) {
+      throw new Error('Connection not established. Call connect() first.');
+    }
+    return this.connection.createChannel();
+  }
+
+  async createConfirmChannel(): Promise<ConfirmChannel> {
+    if (!this.connection) {
+      throw new Error('Connection not established. Call connect() first.');
+    }
+    return this.connection.createConfirmChannel();
   }
 
   async close(): Promise<void> {
     if (this.connection) {
       await this.connection.close();
       this.connection = null;
-      this.connectPromise = null;
     }
   }
 
-  isHealthy(): boolean {
+  get isOpen(): boolean {
     return this.connection !== null;
   }
 }

@@ -1,4 +1,4 @@
-import * as z from "zod";
+import type { z } from 'zod';
 
 export abstract class DomainError extends Error {
   constructor(message: string) {
@@ -8,9 +8,21 @@ export abstract class DomainError extends Error {
   }
 }
 
+export interface ValidationIssue {
+  path: string[];
+  message: string;
+  code?: string;
+}
+
 export class DomainValidationError extends DomainError {
-  readonly issues: z.ZodError['issues'];
-  constructor(issues: z.ZodError['issues']) {
+  readonly issues: ValidationIssue[];
+
+  constructor(zodIssues: z.ZodError['issues']) {
+    const issues = zodIssues.map(i => ({
+      path: i.path.map(String),
+      message: i.message,
+      code: i.code,
+    }));
     super(`Validation failed: ${issues.map(i => i.message).join(', ')}`);
     this.issues = issues;
   }
@@ -19,27 +31,23 @@ export class DomainValidationError extends DomainError {
 export class InvalidEmailError extends DomainError {
   constructor(email: string) {
     super(`Invalid email format: ${email}`);
-    this.name = 'InvalidEmailError';
   }
 }
 
 export class InvalidUserNameError extends DomainError {
   constructor(message: string) {
     super(message);
-    this.name = 'InvalidUserNameError';
   }
 }
 
 export class UserNotFoundError extends DomainError {
   constructor(userId: string) {
     super(`User not found: ${userId}`);
-    this.name = 'UserNotFoundError';
   }
 }
 
 export class DuplicateEmailError extends DomainError {
   constructor(email: string) {
     super(`Email already in use: ${email}`);
-    this.name = 'DuplicateEmailError';
   }
 }
